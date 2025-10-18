@@ -26,6 +26,19 @@ public final class DriveInfoBoxDataExtractor {
         return  time;
     }
 
+    public static LocalTime fetchArrivalTime(Element element){
+        element = getInfoContainer(element);
+        element = element
+                .child(1)
+                .child(0)
+                .child(0)
+                .child(0);
+
+        LocalTime time = LocalTime.parse(element.text());
+
+        return  time;
+    }
+
     public static LocalDateTime getDateTime(LocalDate date, LocalTime time){
         LocalDateTime dateTime = LocalDateTime.of(date, time);
         return dateTime;
@@ -144,8 +157,10 @@ public final class DriveInfoBoxDataExtractor {
                 fetchArrivalPlace(driveElement),
                 LocalDateTime.now(),
                 getDateTime(fetchDate(pageURL), fetchDepartureTime(driveElement)),
+                getDateTime(fetchDate(pageURL), fetchArrivalTime(driveElement)),
                 fetchAvailableSeats(driveElement),
-                fetchCost(driveElement)
+                fetchCost(driveElement),
+                new String(isBigBus(driveElement)? "big bus":"route taxi")
         );
 
         return snapshot;

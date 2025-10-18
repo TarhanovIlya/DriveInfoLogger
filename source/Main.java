@@ -1,42 +1,39 @@
 import org.jsoup.nodes.Element;
+import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.support.ui.WebDriverWait;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.List;
 
 public class Main {
+
+
+
+
     public static void main(String[] args) throws Exception {
 
+        ChromeDriver chromeDriver = new ChromeDriver();
 
+        FileOperator writer = new FileOperator(GlobalVariables.csvLogURL, GlobalVariables.errorLogURL, GlobalVariables.sessionLogURL, GlobalVariables.departureArrivalURL);
 
+        SiteSnapshotExtractor snapshotExtractor = new SiteSnapshotExtractor(chromeDriver);
+        MyScripts scripts = new MyScripts();
 
-        String csvLogURL = "C:\\Users\\r1r2\\Desktop\\java_code\\FreeBusSeatsLogger\\data\\data.txt";
-        String errorLogURL = "C:\\Users\\r1r2\\Desktop\\java_code\\FreeBusSeatsLogger\\data\\errorLog.txt";
-
-        Route route = new Route("Минск", "Молодечно", "2025-10-18");
-
-
-
-
-        FileOperator writer = new FileOperator(csvLogURL, errorLogURL);
-        SiteSnapshotExtractor snapshotExtractor = null;
-
-
+        scripts.setSnapshotExtractor(snapshotExtractor);
+        scripts.setWriter(writer);
 
         try {
 
+//            List<Route> routes = scripts.createRoutes();
+//
+//            for (Route route:routes
+//                 ) {
+//                scripts.downloadSnapshot(route);
+//            }
 
-            snapshotExtractor = new SiteSnapshotExtractor(route);
+            scripts.downloadSnapshot(new Route("Минск", "Гродно", "2025-10-20"));
 
-            System.out.println(snapshotExtractor.url);
-
-            String pageURL = snapshotExtractor.url;
-
-            List<Element> drives = snapshotExtractor.extractDriveElements(snapshotExtractor.url);
-
-
-            for (Element el: drives
-                 ) {
-                writer.writeDriveLine_CSV(DriveInfoBoxDataExtractor.getDriveDataSnapshot(pageURL,el));
-            }
 
         }
 
@@ -46,6 +43,8 @@ public class Main {
         }
 
         finally {
+            writer.writeSessionLog();
+
             writer.close();
             snapshotExtractor.close();
         }

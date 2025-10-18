@@ -7,36 +7,38 @@ import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.interactions.Actions;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 
 public class SiteSnapshotExtractor implements AutoCloseable {
 
-    public final String url;
     private JavascriptExecutor js;
     private ChromeDriver chromeDriver;
-    private Route route;
+    private WebDriverWait wait;
 
+    public SiteSnapshotExtractor(ChromeDriver chromeDriver) throws InterruptedException {
 
-    public SiteSnapshotExtractor(Route route) throws InterruptedException {
+        this.chromeDriver = chromeDriver;
+        this.wait = new WebDriverWait(chromeDriver, Duration.ofSeconds(10));
 
-        this.chromeDriver = new ChromeDriver();
         this.js = (JavascriptExecutor) chromeDriver;
-
-        this.route = route;
-
-        getToDesiredRouteWebPage(route);
-
-        url = chromeDriver.getCurrentUrl();
     }
 
     @Override
     public void close() throws Exception {
         chromeDriver.quit();
     }
+
+    public String getCurrentURL(){
+        return chromeDriver.getCurrentUrl();
+    }
+
 
 
 
@@ -45,20 +47,29 @@ public class SiteSnapshotExtractor implements AutoCloseable {
         final String baseUrl = "https://atlasbus.by/";
 
         chromeDriver.get(baseUrl);
-        Thread.sleep(5000);
 
 
-        WebElement fromBox = chromeDriver.findElement(By.cssSelector("input[data-testid='from-suggest']"));
+
+        WebElement fromBox = wait.until(ExpectedConditions.elementToBeClickable(By.cssSelector("input[data-testid='from-suggest']")));;
         inputIntoWebElement(fromBox, route.from);
 
-        WebElement toBox = chromeDriver.findElement(By.cssSelector("input[data-testid='to-suggest']"));
+
+        WebElement toBox = wait.until(ExpectedConditions.elementToBeClickable(By.cssSelector("input[data-testid='to-suggest']")));
         inputIntoWebElement(toBox, route.to);
 
-        WebElement searchButton = chromeDriver.findElement(By.cssSelector("button[data-testid='search-button']"));
+
+
+        String previousUrl = chromeDriver.getCurrentUrl();
+
+        WebElement searchButton = wait.until(ExpectedConditions.elementToBeClickable(By.cssSelector("button[data-testid='search-button']")));
         searchButton.sendKeys(Keys.ENTER);
 
-        changeUrlDate(route.date);
+
+        wait.until(ExpectedConditions.not(ExpectedConditions.urlToBe(previousUrl)));
+        chromeDriver.get(changeUrlDate(route.date));
     }
+
+
 
     private void inputIntoWebElement(WebElement element, String data) throws InterruptedException {
 
@@ -66,16 +77,14 @@ public class SiteSnapshotExtractor implements AutoCloseable {
         new Actions(chromeDriver).moveToElement(element).click().perform();
 
         element.sendKeys(data);
-
-        element.click();
-        Thread.sleep(3000);
+        //element.click();
+        Thread.sleep(1000);
         element.sendKeys(Keys.ENTER);
 
     }
 
-    private void changeUrlDate(String date) throws InterruptedException {
+    public String changeUrlDate(String date) throws InterruptedException {
 
-        Thread.sleep(1000);
         StringBuilder url = new StringBuilder(chromeDriver.getCurrentUrl());
 
         int start = url.indexOf("date=") + 5;
@@ -83,22 +92,38 @@ public class SiteSnapshotExtractor implements AutoCloseable {
 
         url.replace(start, end, date);
 
-        chromeDriver.get(url.toString());
+        return url.toString();
 
     }
 
 
+    public boolean noTicketsPage(String url) throws IOException {
+        Document doc = Jsoup.connect(url).get();
+
+        Element e = doc.selectFirst(".MuiContainer-root.jss7.MuiContainer-maxWidthLg").child(0).child(0).child(0);
+        e = e.selectFirst("h3");
+
+
+        if (e == null) return false;
+
+        String text = e.text();
+
+        return text.equalsIgnoreCase("билеты не найдены");
+    }
 
 
     public List<Element> extractDriveElements(String url) throws IOException {
 
-        List<Element> elements = new ArrayList<>();
 
+        List<Element> elements = new ArrayList<>();
 
         Document doc = Jsoup.connect(url).get();
 
         elements = doc.select(".jss10");
 
+        GlobalVariables.driveElementsRead += elements.size();
+
+        if (elements.isEmpty()) throw new RuntimeException("Tried to fetch driveElements, but extracted 0");
         return elements;
     }
 
