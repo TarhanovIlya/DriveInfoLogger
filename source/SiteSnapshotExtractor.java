@@ -12,7 +12,8 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 
 import java.io.IOException;
 import java.time.Duration;
-import java.time.LocalTime;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -25,7 +26,7 @@ public class SiteSnapshotExtractor implements AutoCloseable {
     public SiteSnapshotExtractor(ChromeDriver chromeDriver) throws InterruptedException {
 
         this.chromeDriver = chromeDriver;
-        this.wait = new WebDriverWait(chromeDriver, Duration.ofSeconds(10));
+        this.wait = new WebDriverWait(chromeDriver, Duration.ofSeconds(30));
 
         this.js = (JavascriptExecutor) chromeDriver;
     }
@@ -48,16 +49,11 @@ public class SiteSnapshotExtractor implements AutoCloseable {
 
         chromeDriver.get(baseUrl);
 
-
-
         WebElement fromBox = wait.until(ExpectedConditions.elementToBeClickable(By.cssSelector("input[data-testid='from-suggest']")));;
         inputIntoWebElement(fromBox, route.from);
 
-
         WebElement toBox = wait.until(ExpectedConditions.elementToBeClickable(By.cssSelector("input[data-testid='to-suggest']")));
         inputIntoWebElement(toBox, route.to);
-
-
 
         String previousUrl = chromeDriver.getCurrentUrl();
 
@@ -66,24 +62,39 @@ public class SiteSnapshotExtractor implements AutoCloseable {
 
 
         wait.until(ExpectedConditions.not(ExpectedConditions.urlToBe(previousUrl)));
-        chromeDriver.get(changeUrlDate(route.date));
+        chromeDriver.get(changeUrlDate(route.date, getCurrentURL()));
     }
-
-
 
     private void inputIntoWebElement(WebElement element, String data) throws InterruptedException {
 
 
+
+
         new Actions(chromeDriver).moveToElement(element).click().perform();
 
+        element.sendKeys(Keys.CONTROL + "a");
+        element.sendKeys(Keys.DELETE);
+
+        Thread.sleep(3000);
         element.sendKeys(data);
-        //element.click();
-        Thread.sleep(1000);
+        Thread.sleep(3000);
         element.sendKeys(Keys.ENTER);
 
     }
 
-    public String changeUrlDate(String date) throws InterruptedException {
+    public String getNextDateUrl(String url) throws InterruptedException {
+        LocalDate currentUrlDate = extractUrlDate(url);
+        currentUrlDate = currentUrlDate.plusDays(1);
+        return changeUrlDate(currentUrlDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd")), url);
+    }
+
+    private LocalDate extractUrlDate(String url) {
+        int start = url.indexOf("date=") + 5;
+        int end = start + 10;
+        return LocalDate.parse(url.substring(start, end));
+    }
+
+    public String changeUrlDate(String date, String previousUrl) throws InterruptedException {
 
         StringBuilder url = new StringBuilder(chromeDriver.getCurrentUrl());
 
@@ -98,7 +109,7 @@ public class SiteSnapshotExtractor implements AutoCloseable {
 
 
     public boolean noTicketsPage(String url) throws IOException {
-        Document doc = Jsoup.connect(url).get();
+        Document doc = Jsoup.connect(url).timeout(60000).get();
 
         Element e = doc.selectFirst(".MuiContainer-root.jss7.MuiContainer-maxWidthLg").child(0).child(0).child(0);
         e = e.selectFirst("h3");

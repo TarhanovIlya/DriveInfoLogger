@@ -4,6 +4,9 @@ import org.jsoup.select.Elements;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.util.Locale;
 
 public final class DriveInfoBoxDataExtractor {
 
@@ -11,33 +14,94 @@ public final class DriveInfoBoxDataExtractor {
         throw new UnsupportedOperationException("Utility class");
     }
 
-    public static LocalTime fetchDepartureTime(Element element){
+    public static LocalDateTime fetchDepartureTime(Element element) {
         element = getInfoContainer(element);
 
-        element = element
+        Element timeElement = element
                 .child(0)
                 .child(0)
                 .child(0)
                 .child(0);
 
+        Element dateElement = null;
+        try {
+            dateElement = element
+                    .child(0)
+                    .child(0)
+                    .child(0)
+                    .child(1);
+        } catch (Exception ignored) {
+        }
 
-        LocalTime time = LocalTime.parse(element.text());
+        String timeText = timeElement.text().trim();
+        LocalTime time = LocalTime.parse(timeText);
 
-        return  time;
+        LocalDate date;
+        if (dateElement != null && !dateElement.text().isEmpty()) {
+            date = parseDateWithoutYear(dateElement.text().trim());
+        } else {
+            date = LocalDate.now();
+        }
+
+        return LocalDateTime.of(date, time);
     }
 
-    public static LocalTime fetchArrivalTime(Element element){
+    public static LocalDateTime fetchArrivalTime(Element element, LocalDateTime departureDateTime) {
         element = getInfoContainer(element);
-        element = element
+
+        Element timeElement = element
                 .child(1)
                 .child(0)
                 .child(0)
                 .child(0);
 
-        LocalTime time = LocalTime.parse(element.text());
+        LocalTime time = LocalTime.parse(timeElement.text().trim());
 
-        return  time;
+        Element dateElement = null;
+        try {
+            dateElement = element
+                    .child(1)
+                    .child(0)
+                    .child(0)
+                    .child(1);
+        } catch (Exception ignored) { }
+
+        LocalDate date;
+
+        if (dateElement != null && !dateElement.text().isEmpty()) {
+            date = parseDateWithoutYear(dateElement.text().trim());
+        } else {
+            date = departureDateTime.toLocalDate();
+
+            if (time.isBefore(departureDateTime.toLocalTime())) {
+                date = date.plusDays(1);
+            }
+        }
+
+        return LocalDateTime.of(date, time);
     }
+
+    //функция parseDateWithoutYear может дать неверные данные в конце текущего года / начале следующего
+    private static LocalDate parseDateWithoutYear(String text) {
+        String[] parts = text.split(",");
+        String datePart = parts[0].trim();
+
+        int year = LocalDate.now().getYear();
+
+        DateTimeFormatter ruFormatter = DateTimeFormatter.ofPattern("dd MMM yyyy", new Locale("ru"));
+        DateTimeFormatter enFormatter = DateTimeFormatter.ofPattern("dd MMM yyyy", Locale.ENGLISH);
+
+        try {
+            return LocalDate.parse(datePart + " " + year, ruFormatter);
+        } catch (DateTimeParseException e1) {
+            try {
+                return LocalDate.parse(datePart + " " + year, enFormatter);
+            } catch (DateTimeParseException e2) {
+                throw new RuntimeException("Не удалось распарсить дату: " + text);
+            }
+        }
+    }
+
 
     public static LocalDateTime getDateTime(LocalDate date, LocalTime time){
         LocalDateTime dateTime = LocalDateTime.of(date, time);
@@ -156,11 +220,11 @@ public final class DriveInfoBoxDataExtractor {
                 fetchDeparturePlace(driveElement),
                 fetchArrivalPlace(driveElement),
                 LocalDateTime.now(),
-                getDateTime(fetchDate(pageURL), fetchDepartureTime(driveElement)),
-                getDateTime(fetchDate(pageURL), fetchArrivalTime(driveElement)),
+                fetchDepartureTime(driveElement),
+                fetchArrivalTime(driveElement, fetchDepartureTime(driveElement)),
                 fetchAvailableSeats(driveElement),
                 fetchCost(driveElement),
-                new String(isBigBus(driveElement)? "big bus":"route taxi")
+                new String(isBigBus(driveElement)? "not r.t.":"route taxi")
         );
 
         return snapshot;

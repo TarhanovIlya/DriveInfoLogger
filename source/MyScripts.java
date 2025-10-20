@@ -1,9 +1,7 @@
 import org.jsoup.nodes.Element;
-import org.openqa.selenium.support.ui.WebDriverWait;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -14,40 +12,60 @@ public class MyScripts {
 
 
 
-    public void downloadSnapshot(Route route) throws InterruptedException, IOException {
-        snapshotExtractor.getToDesiredRouteWebPage(route);
+//    public void downloadSnapshot(Route route) throws InterruptedException, IOException {
+//        snapshotExtractor.getToDesiredRouteWebPage(route);
+//
+//        System.out.println(snapshotExtractor.getCurrentURL());
+//        List<Element> drives = new ArrayList<>();
+//        try {
+//             drives = snapshotExtractor.extractDriveElements(snapshotExtractor.changeUrlDate(route.date));
+//        } catch (RuntimeException exception){
+//            GlobalVariables.extractionErrors += 1;
+//        }
+//
+//
+//            for (Element el: drives
+//                 ) {
+//                writer.writeDriveLine_CSV(DriveInfoBoxDataExtractor.getDriveDataSnapshot(snapshotExtractor.changeUrlDate(route.date),el));
+//            }
+//
+//    }
 
-        System.out.println(snapshotExtractor.getCurrentURL());
+    public void downloadSnapshots_Iterable(Route firstDateRoute) throws InterruptedException, IOException {
+        snapshotExtractor.getToDesiredRouteWebPage(firstDateRoute);
+        String currentWorkingUrl = snapshotExtractor.getCurrentURL();
 
-            List<Element> drives = snapshotExtractor.extractDriveElements(snapshotExtractor.changeUrlDate(route.date));
+        List<Element> driveDataElements = new ArrayList<>();
 
+        if(!snapshotExtractor.noTicketsPage(currentWorkingUrl)){
+            driveDataElements.addAll(snapshotExtractor.extractDriveElements(currentWorkingUrl));
+            currentWorkingUrl = snapshotExtractor.getNextDateUrl(currentWorkingUrl);
+        }
+        else {
+            currentWorkingUrl = snapshotExtractor.getNextDateUrl(currentWorkingUrl);
+        }
 
-            for (Element el: drives
-                 ) {
-                writer.writeDriveLine_CSV(DriveInfoBoxDataExtractor.getDriveDataSnapshot(snapshotExtractor.changeUrlDate(route.date),el));
-            }
+        while (!snapshotExtractor.noTicketsPage(currentWorkingUrl)){
+            driveDataElements.addAll(snapshotExtractor.extractDriveElements(currentWorkingUrl));
+            currentWorkingUrl = snapshotExtractor.getNextDateUrl(currentWorkingUrl);
+        }
+
+        for (Element driveData: driveDataElements
+             ) {
+            writer.writeDriveLine_CSV(DriveInfoBoxDataExtractor.getDriveDataSnapshot(snapshotExtractor.changeUrlDate(firstDateRoute.date, currentWorkingUrl), driveData));
+
+        }
 
     }
 
-    List<Route> createRoutes() throws IOException, InterruptedException {
+    List<Route> initializeRoutes() throws IOException {
         List<String[]> pairs = writer.readDepartureArrival();
 
         List<Route> routes = new ArrayList<>();
 
         for (String[] pair:pairs
              ) {
-            LocalDateTime date = LocalDateTime.now();
-            snapshotExtractor.getToDesiredRouteWebPage(new Route(pair, date));
-
-            // if current day does not have any tickets left
-            if(snapshotExtractor.noTicketsPage(snapshotExtractor.changeUrlDate(date.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))))){
-                date = date.plusDays(1);
-            }
-
-            while (!snapshotExtractor.noTicketsPage(snapshotExtractor.changeUrlDate(date.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))))){
-                routes.add(new Route(pair, date));
-                date = date.plusDays(1);
-            }
+                routes.add(new Route(pair, LocalDateTime.now()));
         }
 
 

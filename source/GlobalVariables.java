@@ -4,7 +4,9 @@ public class GlobalVariables {
     static LocalDateTime sessionStart = LocalDateTime.now();
     static int driveElementsRead = 0;
     static int driveDataSnapshotsWritten = 0;
+    static int extractionErrors = 0;
 
+    static int maxDaysDifference = 30; // максимальная разница между сегодняшней датой и датой сбора информации и поездках
 
 
     static String csvLogURL = "C:\\Users\\r1r2\\Desktop\\java_code\\FreeBusSeatsLogger\\data\\data.txt";
