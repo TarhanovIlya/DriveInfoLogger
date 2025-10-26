@@ -5,6 +5,7 @@ public class GlobalVariables {
     static int driveElementsRead = 0;
     static int driveDataSnapshotsWritten = 0;
     static int extractionErrors = 0;
+    static int fetchErrors = 0;
 
     static int maxDaysDifference = 30; // максимальная разница между сегодняшней датой и датой сбора информации и поездках
 

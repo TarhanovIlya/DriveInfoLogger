@@ -128,7 +128,7 @@ public class SiteSnapshotExtractor implements AutoCloseable {
 
         List<Element> elements = new ArrayList<>();
 
-        Document doc = Jsoup.connect(url).get();
+        Document doc = Jsoup.connect(url).timeout(60000).get();
 
         elements = doc.select(".jss10");
 

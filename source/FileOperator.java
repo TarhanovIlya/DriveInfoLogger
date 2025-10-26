@@ -93,6 +93,7 @@ public class FileOperator implements AutoCloseable {
         sessionLog.append("    driveElements read:         ").append(GlobalVariables.driveElementsRead).append("\n");
         sessionLog.append("    driveDataSnapshots written: ").append(GlobalVariables.driveDataSnapshotsWritten).append("\n");
         sessionLog.append("    drive elements extraction errors: ").append(GlobalVariables.extractionErrors).append("\n");
+        sessionLog.append("    drive elements data fetch errors: ").append(GlobalVariables.fetchErrors).append("\n");
         sessionLog.append("\n");
         sessionLog.append("\n");
         sessionLog.append("\n");

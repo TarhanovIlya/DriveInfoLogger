@@ -11,7 +11,7 @@ public class Main {
         // Schedule the task to run periodically
         Timer timer = new Timer(true);
         long delay = 0;
-        long period = 1000 * 60 * 10;
+        long period = 1000 * 60 * 60;
 
         timer.scheduleAtFixedRate(new SnapshotTask(), delay, period);
 

@@ -37,24 +37,32 @@ public class MyScripts {
 
         List<Element> driveDataElements = new ArrayList<>();
 
-        if(!snapshotExtractor.noTicketsPage(currentWorkingUrl)){
-            driveDataElements.addAll(snapshotExtractor.extractDriveElements(currentWorkingUrl));
-            currentWorkingUrl = snapshotExtractor.getNextDateUrl(currentWorkingUrl);
-        }
-        else {
-            currentWorkingUrl = snapshotExtractor.getNextDateUrl(currentWorkingUrl);
-        }
+//        if(!snapshotExtractor.noTicketsPage(currentWorkingUrl)){
+//            driveDataElements.addAll(snapshotExtractor.extractDriveElements(currentWorkingUrl));
+//            currentWorkingUrl = snapshotExtractor.getNextDateUrl(currentWorkingUrl);
+//        }
+//        else {
+//            currentWorkingUrl = snapshotExtractor.getNextDateUrl(currentWorkingUrl);
+//        }
+//
+//        while (!snapshotExtractor.noTicketsPage(currentWorkingUrl)){
+//            driveDataElements.addAll(snapshotExtractor.extractDriveElements(currentWorkingUrl));
+//            currentWorkingUrl = snapshotExtractor.getNextDateUrl(currentWorkingUrl);
+//        }
 
-        while (!snapshotExtractor.noTicketsPage(currentWorkingUrl)){
-            driveDataElements.addAll(snapshotExtractor.extractDriveElements(currentWorkingUrl));
+        for(int day=0; day<GlobalVariables.maxDaysDifference; day+=1){
+            if(!snapshotExtractor.noTicketsPage(currentWorkingUrl)){
+                driveDataElements.addAll(snapshotExtractor.extractDriveElements(currentWorkingUrl));
+            }
             currentWorkingUrl = snapshotExtractor.getNextDateUrl(currentWorkingUrl);
         }
 
         for (Element driveData: driveDataElements
              ) {
-            writer.writeDriveLine_CSV(DriveInfoBoxDataExtractor.getDriveDataSnapshot(snapshotExtractor.changeUrlDate(firstDateRoute.date, currentWorkingUrl), driveData));
+            writer.writeDriveLine_CSV(DriveInfoBoxDataExtractor.getDriveDataSnapshot(driveData));
 
         }
+
 
     }
 

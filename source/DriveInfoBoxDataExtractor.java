@@ -30,7 +30,8 @@ public final class DriveInfoBoxDataExtractor {
                     .child(0)
                     .child(0)
                     .child(1);
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            GlobalVariables.fetchErrors +=1;
         }
 
         String timeText = timeElement.text().trim();
@@ -64,7 +65,7 @@ public final class DriveInfoBoxDataExtractor {
                     .child(0)
                     .child(0)
                     .child(1);
-        } catch (Exception ignored) { }
+        } catch (Exception e) { GlobalVariables.fetchErrors +=1; }
 
         LocalDate date;
 
@@ -88,8 +89,8 @@ public final class DriveInfoBoxDataExtractor {
 
         int year = LocalDate.now().getYear();
 
-        DateTimeFormatter ruFormatter = DateTimeFormatter.ofPattern("dd MMM yyyy", new Locale("ru"));
-        DateTimeFormatter enFormatter = DateTimeFormatter.ofPattern("dd MMM yyyy", Locale.ENGLISH);
+        DateTimeFormatter ruFormatter = DateTimeFormatter.ofPattern("d MMM yyyy", new Locale("ru"));
+        DateTimeFormatter enFormatter = DateTimeFormatter.ofPattern("d MMM yyyy", Locale.ENGLISH);
 
         try {
             return LocalDate.parse(datePart + " " + year, ruFormatter);
@@ -155,6 +156,7 @@ public final class DriveInfoBoxDataExtractor {
                         .child(0);
             }
             catch (Exception e1){
+                GlobalVariables.fetchErrors +=1;
                 throw new RuntimeException("seats not found in element");
             }
         }
@@ -215,7 +217,7 @@ public final class DriveInfoBoxDataExtractor {
         return container;
     }
 
-    public static DriveDataSnapshot getDriveDataSnapshot(String pageURL, Element driveElement){
+    public static DriveDataSnapshot getDriveDataSnapshot(Element driveElement){
         DriveDataSnapshot snapshot = new DriveDataSnapshot(
                 fetchDeparturePlace(driveElement),
                 fetchArrivalPlace(driveElement),
